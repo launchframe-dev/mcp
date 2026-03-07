@@ -2,6 +2,35 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { execSync } from 'child_process';
 
+/**
+ * Request human confirmation for a destructive action via MCP elicitation.
+ * Returns true if the user confirmed, false if declined/cancelled or if the
+ * client does not support elicitation (fails safe — aborts rather than proceeds).
+ */
+async function confirmDestructive(server: McpServer, message: string): Promise<boolean> {
+  try {
+    const result = await server.server.elicitInput({
+      mode: 'form',
+      message,
+      requestedSchema: {
+        type: 'object',
+        properties: {
+          confirmed: {
+            type: 'boolean',
+            title: 'Yes, proceed',
+          },
+        },
+        required: ['confirmed'],
+      },
+    });
+
+    return result.action === 'accept' && result.content?.confirmed === true;
+  } catch {
+    // Client does not support elicitation — fail safe
+    return false;
+  }
+}
+
 export function registerCliTools(server: McpServer): void {
 
   // ─── docker:* ────────────────────────────────────────────────────────────
@@ -80,12 +109,20 @@ export function registerCliTools(server: McpServer): void {
 
   server.tool(
     'cli_docker_destroy',
-    'Destroy ALL Docker resources for a LaunchFrame project (containers, volumes, images, network). IRREVERSIBLE — all local data will be lost.',
+    'Destroy ALL Docker resources for a LaunchFrame project (containers, volumes, images, network). IRREVERSIBLE — all local data including database volumes will be lost. Will prompt for confirmation before proceeding.',
     {
       projectPath: z.string().describe('Absolute path to the LaunchFrame project root'),
     },
     async ({ projectPath }) => {
       try {
+        const confirmed = await confirmDestructive(
+          server,
+          '⚠️ This will permanently delete ALL Docker resources for this project: containers, volumes (including the local database), images, and the network. This cannot be undone. Proceed?'
+        );
+        if (!confirmed) {
+          return { content: [{ type: 'text', text: 'Aborted. No Docker resources were removed.' }] };
+        }
+
         const output = execSync('launchframe docker:destroy --force', { cwd: projectPath, encoding: 'utf8' });
         return { content: [{ type: 'text', text: output || 'All Docker resources destroyed.' }] };
       } catch (error: any) {
@@ -147,14 +184,24 @@ export function registerCliTools(server: McpServer): void {
 
   server.tool(
     'cli_database_query',
-    'Execute a SQL query against the local (or remote) database and return results. Use for SELECT queries, schema inspection, or data checks. Not suitable for long-running interactive sessions.',
+    'Execute a SQL query against the local (or remote) database and return results. Use for SELECT queries, schema inspection, or data checks. When remote=true, will prompt for confirmation before touching production.',
     {
       projectPath: z.string().describe('Absolute path to the LaunchFrame project root'),
       sql: z.string().describe('SQL to execute (e.g., "SELECT * FROM users LIMIT 10;")'),
-      remote: z.boolean().optional().describe('If true, query the production database via SSH instead of local'),
+      remote: z.boolean().optional().describe('If true, query the production database via SSH instead of local. Requires confirmation.'),
     },
     async ({ projectPath, sql, remote }) => {
       try {
+        if (remote) {
+          const confirmed = await confirmDestructive(
+            server,
+            `⚠️ This will execute SQL against the PRODUCTION database:\n\n${sql}\n\nProceed?`
+          );
+          if (!confirmed) {
+            return { content: [{ type: 'text', text: 'Aborted. Query not executed on production.' }] };
+          }
+        }
+
         const remoteFlag = remote ? ' --remote' : '';
         const output = execSync(`launchframe database:console${remoteFlag} --query ${JSON.stringify(sql)}`, { cwd: projectPath, encoding: 'utf8' });
         return { content: [{ type: 'text', text: output || '(no output)' }] };
@@ -270,12 +317,20 @@ export function registerCliTools(server: McpServer): void {
 
   server.tool(
     'cli_deploy_sync_features',
-    'Sync subscription plan features from the local database to the production database. Requires both local and remote Docker stacks to be running.',
+    'Sync subscription plan features from the local database to the production database. DESTRUCTIVE: truncates subscription_plan_features on production. Will prompt for confirmation before proceeding.',
     {
       projectPath: z.string().describe('Absolute path to the LaunchFrame project root'),
     },
     async ({ projectPath }) => {
       try {
+        const confirmed = await confirmDestructive(
+          server,
+          '⚠️ This will TRUNCATE subscription_plan_features on the PRODUCTION database and replace with local data. Proceed?'
+        );
+        if (!confirmed) {
+          return { content: [{ type: 'text', text: 'Aborted. No changes made to production.' }] };
+        }
+
         const output = execSync('launchframe deploy:sync-features --yes', { cwd: projectPath, encoding: 'utf8' });
         return { content: [{ type: 'text', text: output || 'Features synced to production.' }] };
       } catch (error: any) {
