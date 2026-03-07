@@ -9,7 +9,7 @@ import { registerModuleTools } from './tools/modules.js';
 import { registerEntityTools } from './tools/entities.js';
 import { registerEnvTools } from './tools/env.js';
 import { registerVariantTools } from './tools/variants.js';
-// Phase 2: import { registerCliTools } from './tools/cli.js';
+import { registerCliTools } from './tools/cli.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: 'launchframe-mcp', version: '1.0.0' });
@@ -24,7 +24,7 @@ export function createServer(): McpServer {
   registerEntityTools(server);
   registerEnvTools(server);
   registerVariantTools(server);
-  // Phase 2: registerCliTools(server);
+  registerCliTools(server);
 
   return server;
 }
