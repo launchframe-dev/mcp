@@ -42,8 +42,8 @@ import { User } from '../users/user.entity';
 @Get('route')
 handler(@UserSession() user?: User) { ... }`,
 
-        customer_portal: `// Accessible by regular_user role (B2B2C variant only)
-// Without this decorator, regular_user gets 401
+        customer_portal: `// Accessible by customer role (B2B2C variant only)
+// Without this decorator, customer gets 401
 import { CustomerPortal, UserSession } from '../auth/auth.decorator';
 import { User } from '../users/user.entity';
 
@@ -106,7 +106,7 @@ handler(@Session() session: { user: any; session: any }) {
 // Source: src/modules/auth/better-auth.guard.ts
 // Applied globally in app.module.ts as APP_GUARD.
 // Allows: business_user, superadmin
-// Blocks: unauthenticated, regular_user (unless @CustomerPortal())
+// Blocks: unauthenticated, customer (unless @CustomerPortal())
 // You never need to add this manually.`,
 
         credits: `// CreditsGuard — deducts credits per request based on @DeductCredits(n).

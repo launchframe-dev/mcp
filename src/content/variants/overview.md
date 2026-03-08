@@ -20,7 +20,7 @@ Extends Base by adding workspace/project isolation.
 
 ### B2B2C
 Extends Base by adding a separate customer-facing experience (end-users of your customers).
-- Adds `regular_user` role
+- Adds `customer` role
 - Adds `customers-portal` frontend service
 - Adds `@CustomerPortal()` route decorator for customer-only endpoints
 - B2B2C can also be combined with multi-tenancy
