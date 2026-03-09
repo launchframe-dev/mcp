@@ -184,7 +184,7 @@ export function registerCliTools(server: McpServer): void {
 
   server.tool(
     'cli_database_query',
-    'Execute a SQL query against the local (or remote) database and return results. Use for SELECT queries, schema inspection, or data checks. When remote=true, will prompt for confirmation before touching production.',
+    'Execute a SQL query against the local (or remote) database and return results. Use for SELECT queries, schema inspection, or data checks. When remote=true, will prompt for confirmation before touching production. Call database_schema first if you need to know what tables/columns exist.',
     {
       projectPath: z.string().describe('Absolute path to the LaunchFrame project root'),
       sql: z.string().describe('SQL to execute (e.g., "SELECT * FROM users LIMIT 10;")'),
