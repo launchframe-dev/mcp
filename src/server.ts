@@ -10,6 +10,7 @@ import { registerEntityTools } from './tools/entities.js';
 import { registerEnvTools } from './tools/env.js';
 import { registerVariantTools } from './tools/variants.js';
 import { registerCliTools } from './tools/cli.js';
+import { registerDatabaseTools } from './tools/database.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: 'launchframe-mcp', version: '1.0.0' });
@@ -25,6 +26,7 @@ export function createServer(): McpServer {
   registerEnvTools(server);
   registerVariantTools(server);
   registerCliTools(server);
+  registerDatabaseTools(server);
 
   return server;
 }
