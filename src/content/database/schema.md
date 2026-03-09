@@ -58,18 +58,6 @@ Roles: `business_user`, `superadmin`, `customer` (B2B2C variant)
 | created_at | timestamp | NO |
 | updated_at | timestamp | NO |
 
-#### `oauth_tokens`
-| Column | Type | Nullable | Default |
-|--------|------|----------|---------|
-| id | integer (PK, serial) | NO | nextval |
-| token_type | text | NO | |
-| user_id | integer (FK → users.id) | NO | |
-| access_token | text | NO | |
-| refresh_token | text | NO | |
-| expires_at | timestamp | NO | |
-| created_at | timestamp | NO | CURRENT_TIMESTAMP |
-| updated_at | timestamp | NO | CURRENT_TIMESTAMP |
-
 ---
 
 ### Subscriptions
