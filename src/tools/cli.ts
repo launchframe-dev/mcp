@@ -184,11 +184,29 @@ export function registerCliTools(server: McpServer): void {
 
   server.tool(
     'cli_database_query',
-    'Execute a SQL query against the local (or remote) database and return results. Use for SELECT queries, schema inspection, or data checks. When remote=true, will prompt for confirmation before touching production. Call database_schema first if you need to know what tables/columns exist.',
+    [
+      'Execute a SQL query and return the results as text.',
+      '',
+      'Workflow:',
+      '1. Call database_schema first to learn table/column names.',
+      '2. Call this tool with a complete, valid SQL statement.',
+      '3. Read the returned text — it is raw psql output (column headers + rows).',
+      '',
+      'Local (default): runs against the Docker Compose database on the developer machine.',
+      '  → Requires `launchframe docker:up` to be running.',
+      '',
+      'Remote (remote=true): SSHs into the VPS and runs against the production database.',
+      '  → Will ask the user for confirmation before executing.',
+      '  → Only use when the user explicitly asks about production/live data.',
+      '',
+      'Supported statements: SELECT, INSERT, UPDATE, DELETE, EXPLAIN, etc.',
+      'Always end the SQL with a semicolon.',
+      'Quote identifiers that are reserved words (e.g. "user", "order").',
+    ].join('\n'),
     {
       projectPath: z.string().describe('Absolute path to the LaunchFrame project root'),
-      sql: z.string().describe('SQL to execute (e.g., "SELECT * FROM users LIMIT 10;")'),
-      remote: z.boolean().optional().describe('If true, query the production database via SSH instead of local. Requires confirmation.'),
+      sql: z.string().describe('Complete SQL statement to execute, ending with a semicolon. Example: SELECT id, email FROM "user" LIMIT 10;'),
+      remote: z.boolean().optional().describe('Set to true to query the PRODUCTION database via SSH. Omit or set false for the local database.'),
     },
     async ({ projectPath, sql, remote }) => {
       try {
@@ -202,7 +220,7 @@ export function registerCliTools(server: McpServer): void {
           }
         }
 
-        const remoteFlag = remote ? ' --remote' : '';
+        const remoteFlag = remote ? ' --remote --skip-permission' : '';
         const output = execSync(`launchframe database:console${remoteFlag} --query ${JSON.stringify(sql)}`, { cwd: projectPath, encoding: 'utf8' });
         return { content: [{ type: 'text', text: output || '(no output)' }] };
       } catch (error: any) {
