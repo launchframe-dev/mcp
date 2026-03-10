@@ -1,6 +1,6 @@
 {
   "name": "@launchframe/mcp",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "LaunchFrame MCP Server — knowledge tools for AI agents building LaunchFrame projects",
   "bin": {
     "launchframe-mcp": "dist/index.js"
