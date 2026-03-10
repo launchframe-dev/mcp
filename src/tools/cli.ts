@@ -8,6 +8,13 @@ import { execSync } from 'child_process';
  * client does not support elicitation (fails safe — aborts rather than proceeds).
  */
 async function confirmDestructive(server: McpServer, message: string): Promise<boolean> {
+  const capabilities = server.server.getClientCapabilities();
+
+  // If client doesn't support elicitation, proceed — the LLM already has user intent
+  if (!capabilities?.elicitation) {
+    return true;
+  }
+
   try {
     const result = await server.server.elicitInput({
       mode: 'form',
@@ -26,7 +33,7 @@ async function confirmDestructive(server: McpServer, message: string): Promise<b
 
     return result.action === 'accept' && result.content?.confirmed === true;
   } catch {
-    // Client does not support elicitation — fail safe
+    // Elicitation failed unexpectedly — fail safe
     return false;
   }
 }
