@@ -94,7 +94,7 @@ Business logic lives here. Each feature is a self-contained NestJS module. In mu
 - **PostgreSQL 16** — primary database, one DB shared by all services
 - **Redis 7** — Bull queue backend, session store
 - **Nginx** — reverse proxy, serves frontend SPAs, routes `/api/*` and `/admin/*` to backend
-- **Centralized `.env`** — one file at repo root, bind-mounted into all containers
+- **Centralized `.env`** — one file at the `infrastructure/` working directory, read by Docker Compose (not bind-mounted). The backend receives all vars via `env_file: .env`; frontend services receive a selective subset via explicit `environment:` mappings that Docker Compose substitutes from the same `.env`
 
 ---
 
