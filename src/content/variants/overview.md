@@ -1,67 +1,78 @@
 # LaunchFrame Variants
 
-LaunchFrame generates projects in one of three variants. Each variant is a superset of the previous.
+LaunchFrame projects are generated in one of several variants. **By the time an agent reads this file, the CLI has already run and baked the variant-specific code into the project.** Section markers no longer exist — the code is already the final form for the chosen variant.
 
-## Variant Overview
+## Determining the Active Variant
 
-### Base (B2B, single-tenant)
-The simplest variant. One admin panel, one customer-facing portal, no multi-tenancy.
-- Single workspace per account
+Read the `.launchframe` file in the project root:
+
+```json
+{
+  "variants": {
+    "tenancy": "single-tenant | multi-tenant",
+    "userModel": "b2b | b2b2c"
+  }
+}
+```
+
+Do not rely on environment variables — `.launchframe` is the authoritative source.
+
+---
+
+## Variant Descriptions
+
+### Base (B2B single-tenant)
+
+`tenancy: "single-tenant"`, `userModel: "b2b"`
+
+The simplest variant. One admin panel, one backend, no project isolation, no end-customer layer.
+
 - No `projectId` on entities
-- No `projects` module
-- Roles: `admin`, `user`
+- No `ProjectsModule`, no `ProjectOwnershipGuard`
+- Roles: `admin`, `user` only
+- No `customers-portal` service
 
 ### Multi-tenant
+
+`tenancy: "multi-tenant"`
+
 Extends Base by adding workspace/project isolation.
-- `projects` module: CRUD, ownership guards
-- `projectId: number` column on all domain entities
-- Project ownership guard on all project-scoped routes
-- Roles: `admin`, `user` (scoped to project)
+
+- All domain entities have a `projectId: number` column
+- All project-scoped routes use `ProjectOwnershipGuard` (`src/core/guards/project-ownership.guard.ts`)
+- API client sends `X-Project-Id` header on every request
+- `ProjectsModule` exists at `src/domain/projects/`
+- Admin portal has a project selector in the sidebar
+
+**When writing new code for a multi-tenant project:**
+- Add `@Column() projectId: number;` to new domain entities
+- Apply `@UseGuards(ProjectOwnershipGuard)` to project-scoped controllers
+- Filter all DB queries by `projectId`
 
 ### B2B2C
-Extends Base by adding a separate customer-facing experience (end-users of your customers).
-- Adds `customer` role
-- Adds `customers-portal` frontend service
-- Adds `@CustomerPortal()` route decorator for customer-only endpoints
-- B2B2C can also be combined with multi-tenancy
 
-## Section Marker Syntax
+`userModel: "b2b2c"`
 
-Source files use markers so the CLI can strip/inject variant-specific code blocks:
+Extends Base by adding a separate end-customer layer (end-users of your customers).
 
-```
-// {{SECTION_NAME}}_START
-... variant-specific code ...
-// {{SECTION_NAME}}_END
-```
+- `UserRole` enum includes `CUSTOMER` (`UserRole.CUSTOMER`)
+- Customers authenticate at `/api/auth/customer` — a separate Better Auth instance with `customer_` cookie prefix
+- `UserBusiness` entity links businesses to their customers
+- `customers-portal` service is deployed alongside `admin-portal` and `website`
+- Admin portal has a `/users` route for managing end customers
+- Sessions have a `tenant_id` column for customer isolation
 
-Common section names:
-- `MULTI_TENANT_FIELDS` — `projectId` columns on entities
-- `MULTI_TENANT_GUARD` — project ownership guard imports/decorators
-- `CUSTOMER_PORTAL_ROUTES` — B2B2C customer route blocks
+**When writing new code for a B2B2C project:**
+- Use `@CustomerPortal()` decorator on customer-only endpoints
+- Guard customer routes with the customer auth instance, not the standard one
+- Do not mix business-user sessions with customer sessions
 
-The CLI strips sections that don't apply to the chosen variant and removes the markers from kept sections.
+### B2B2C + Multi-tenant
 
-## Coding Guidelines per Variant
+Both patterns above apply simultaneously. New code must satisfy both sets of constraints.
 
-### When writing entities
-- **Base**: no `projectId`
-- **Multi-tenant**: add `@Column() projectId: number;` wrapped in `// MULTI_TENANT_FIELDS_START` / `_END`
+---
 
-### When writing controllers
-- **Multi-tenant**: add project ownership guard
-  ```typescript
-  // MULTI_TENANT_GUARD_START
-  @UseGuards(ProjectOwnershipGuard)
-  // MULTI_TENANT_GUARD_END
-  ```
-- **B2B2C**: wrap customer-only routes with `@CustomerPortal()` and section markers
+## Default Assumption
 
-### When scaffolding modules
-- Use section markers for any variant-specific imports, providers, or route decorators
-- Keep the base code path clean — markers are additive
-
-## Which Variant to Target
-
-When writing code for a LaunchFrame project, check the project's `VARIANT` env var or ask the user.
-Default assumption: **Base** (single-tenant B2B) unless told otherwise.
+If `.launchframe` is absent or unreadable, default to **Base** (single-tenant B2B) and ask the user to confirm.
