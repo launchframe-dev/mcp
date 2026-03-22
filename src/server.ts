@@ -13,6 +13,7 @@ import { registerCliTools } from './tools/cli.js';
 import { registerDatabaseTools } from './tools/database.js';
 import { registerSubscriptionTools } from './tools/subscriptions.js';
 import { registerArchitectureTools } from './tools/architecture.js';
+import { registerEmailTools } from './tools/email.js';
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: 'launchframe-mcp', version: '1.0.0' });
@@ -31,6 +32,7 @@ export function createServer(): McpServer {
   registerDatabaseTools(server);
   registerSubscriptionTools(server);
   registerArchitectureTools(server);
+  registerEmailTools(server);
 
   return server;
 }
