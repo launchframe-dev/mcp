@@ -33,6 +33,38 @@ Instead of bloating `CLAUDE.md` with rules, agents call tools on demand to pull 
 | `entity_scaffold_typeorm` | TypeORM entity file scaffold |
 | `env_get_conventions` | Centralized `.env` rules and key variable reference |
 | `variant_get_overview` | Base / Multi-tenant / B2B2C variant differences |
+| `database_schema` | Full DB schema with tables, columns, types, and common SQL snippets |
+| `subscriptions_get_plans_overview` | Subscription plans system: plan groups, annual billing, API shape |
+| `architecture_get_overview` | Overall architecture: services, modules, patterns, infrastructure |
+| `email_get_conventions` | Email system: sending patterns, templates, built-in templates |
+| `email_scaffold_template` | Handlebars template stub for a new transactional email |
+| `email_scaffold_send` | NestJS code to send an email (direct or queued) |
+| `cli_docker_up` | Start Docker services (detached) |
+| `cli_docker_down` | Stop all running Docker services |
+| `cli_docker_build` | Build Docker images (all or specific service) |
+| `cli_docker_logs` | Fetch a snapshot of Docker service logs |
+| `cli_docker_destroy` | Destroy ALL Docker resources — irreversible |
+| `cli_migration_run` | Run all pending TypeORM migrations |
+| `cli_migration_create` | Create a new empty TypeORM migration file |
+| `cli_migration_revert` | Revert the most recently applied migration |
+| `cli_database_query` | Execute a SQL query (local or remote via SSH) |
+| `cli_service_list` | List available optional services |
+| `cli_service_add` | Install an optional service non-interactively |
+| `cli_module_list` | List available optional modules |
+| `cli_module_add` | Install a module non-interactively |
+| `cli_deploy_build` | Build production images and push to GHCR |
+| `cli_deploy_up` | Deploy latest images to VPS via SSH |
+| `cli_deploy_sync_features` | Sync plan features to production DB — destructive |
+| `cli_waitlist_up` | Start the waitlist service locally |
+| `cli_waitlist_down` | Stop the local waitlist service |
+| `cli_waitlist_deploy` | Build and deploy waitlist service to VPS |
+| `cli_waitlist_logs` | Fetch waitlist service logs from VPS |
+| `cli_dev_add_user` | Create a random test user in the local DB |
+| `cli_dev_npm_install` | Run npm install inside a service via Docker |
+| `cli_dev_logo` | Generate and inject logo/favicon assets |
+| `cli_cache_info` | Show local service cache info |
+| `cli_cache_update` | Force-update the local service cache |
+| `cli_cache_clear` | Delete the entire local service cache |
 
 ## Manual Install
 
