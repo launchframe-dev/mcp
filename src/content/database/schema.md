@@ -293,6 +293,72 @@ DNS status values: `pending`, `verified`, `failed`
 
 ---
 
+### RBAC (permissions:rbac only)
+
+> These tables are only present when the project was generated with the `rbac` permission variant (`.launchframe` marker has `permissions:rbac`).
+
+#### `roles`
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | integer (PK, serial) | NO | nextval |
+| name | varchar | NO | (unique) |
+| description | varchar | YES | |
+| is_default | boolean | NO | false |
+| created_at | timestamp | NO | CURRENT_TIMESTAMP |
+
+#### `permissions`
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | integer (PK, serial) | NO | nextval |
+| resource | varchar | NO | |
+| action | varchar | NO | |
+| description | varchar | YES | |
+| is_system | boolean | NO | false |
+| created_at | timestamp | NO | CURRENT_TIMESTAMP |
+
+Unique constraint: `(resource, action)`. The effective permission key is `resource:action`.
+
+#### `role_permissions` (join table)
+| Column | Type |
+|--------|------|
+| role_id | integer (FK → roles.id, CASCADE) |
+| permission_id | integer (FK → permissions.id, CASCADE) |
+
+Unique constraint: `(role_id, permission_id)`.
+
+#### `user_role_assignments`
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | integer (PK, serial) | NO | nextval |
+| user_id | integer (FK → users.id, CASCADE) | NO | |
+| role_id | integer (FK → roles.id, CASCADE) | NO | |
+| project_id | integer (FK → projects.id) | YES | NULL |
+| created_at | timestamp | NO | CURRENT_TIMESTAMP |
+
+Unique constraint: `(user_id, role_id, project_id)`. `project_id` is only present in the `rbac_multi-tenant` variant — it scopes the role assignment to a specific project (NULL = global assignment).
+
+#### `team_invitations`
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| id | integer (PK, serial) | NO | nextval |
+| business_id | integer (FK → users.id, CASCADE) | NO | |
+| email | varchar | NO | |
+| assignments | jsonb | NO | |
+| token | varchar | NO | (unique) |
+| expires_at | timestamp | NO | |
+| accepted_at | timestamp | YES | |
+| created_at | timestamp | NO | CURRENT_TIMESTAMP |
+
+#### Additional columns on `users` (RBAC only)
+| Column | Type | Nullable | Default |
+|--------|------|----------|---------|
+| is_owner | boolean | NO | false |
+| business_id | integer (FK → users.id, SET NULL) | YES | |
+
+`is_owner = true` marks the account owner. `business_id` links a team member back to their owner's user record.
+
+---
+
 ### Admin
 
 #### `admin_settings`
@@ -457,4 +523,46 @@ SELECT key, value FROM admin_settings ORDER BY key;
 
 -- Get a specific admin setting
 SELECT value FROM admin_settings WHERE key = 'credits_strategy';
+```
+
+### RBAC (permissions:rbac only)
+
+```sql
+-- List all roles
+SELECT id, name, description, is_default FROM roles ORDER BY name;
+
+-- List all permissions
+SELECT id, resource, action, description, is_system FROM permissions ORDER BY resource, action;
+
+-- Permissions for a specific role
+SELECT p.resource, p.action, p.description
+FROM role_permissions rp
+JOIN permissions p ON p.id = rp.permission_id
+JOIN roles r ON r.id = rp.role_id
+WHERE r.name = 'admin'
+ORDER BY p.resource, p.action;
+
+-- Roles assigned to a user
+SELECT r.name AS role, ura.project_id, ura.created_at
+FROM user_role_assignments ura
+JOIN roles r ON r.id = ura.role_id
+JOIN users u ON u.id = ura.user_id
+WHERE u.email = 'someone@example.com';
+
+-- All team members under a business owner
+SELECT u.email, u.is_owner, u.created_at
+FROM users u
+JOIN users owner ON owner.id = u.business_id
+WHERE owner.email = 'owner@example.com';
+
+-- Pending team invitations
+SELECT email, business_id, expires_at, accepted_at FROM team_invitations WHERE accepted_at IS NULL AND expires_at > NOW();
+
+-- Users with a specific permission (via their roles)
+SELECT DISTINCT u.email
+FROM users u
+JOIN user_role_assignments ura ON ura.user_id = u.id
+JOIN role_permissions rp ON rp.role_id = ura.role_id
+JOIN permissions p ON p.id = rp.permission_id
+WHERE p.resource = 'reports' AND p.action = 'read';
 ```
