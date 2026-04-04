@@ -308,7 +308,7 @@ export function registerCliTools(server: McpServer): void {
 
   server.tool(
     'cli_deploy_build',
-    'Build production Docker images and push to GitHub Container Registry. Optionally build a specific service only.',
+    'Manually build production Docker images and push to GitHub Container Registry. Optionally build a specific service only. NOTE: Only use this for manual deployments. If the project has CI/CD configured (e.g. GitHub Actions), pushing to the main branch triggers a build automatically — do NOT call this unless the user explicitly requests a manual build.',
     {
       projectPath: z.string().describe('Absolute path to the LaunchFrame project root'),
       service: z.string().optional().describe('Specific service to build and push (e.g., "backend"). Omit to build all.'),
